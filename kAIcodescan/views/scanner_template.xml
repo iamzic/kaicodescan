@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_kai_codescan_log_tree" model="ir.ui.view">
+        <field name="name">kai.codescan.log.tree</field>
+        <field name="model">kai.codescan.log</field>
+        <field name="arch" type="xml">
+            <tree string="Scan Logs" create="false" edit="false" delete="false">
+                <field name="create_date"/>
+                <field name="name"/>
+                <field name="user_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_kai_codescan_log_form" model="ir.ui.view">
+        <field name="name">kai.codescan.log.form</field>
+        <field name="model">kai.codescan.log</field>
+        <field name="arch" type="xml">
+            <form string="Scan Log" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <field name="create_date"/>
+                        <field name="name"/>
+                        <field name="user_id"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_kai_camera_scanner" model="ir.actions.client">
+        <field name="name">Camera Scanner</field>
+        <field name="tag">kAIcodescan.camera_scanner</field>
+    </record>
+
+    <record id="action_kai_codescan_log" model="ir.actions.act_window">
+        <field name="name">Scan Logs</field>
+        <field name="res_model">kai.codescan.log</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_kai_codescan_root" name="kAIcodescan" sequence="10"/>
+    <menuitem id="menu_kai_camera_scanner" name="Camera Scanner" parent="menu_kai_codescan_root" action="action_kai_camera_scanner" sequence="10"/>
+    <menuitem id="menu_kai_codescan_log" name="Scan Logs" parent="menu_kai_codescan_root" action="action_kai_codescan_log" sequence="20"/>
+</odoo>
