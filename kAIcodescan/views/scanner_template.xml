@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <record id="view_kai_codescan_log_tree" model="ir.ui.view">
-        <field name="name">kai.codescan.log.tree</field>
+    <record id="view_kai_codescan_log_list" model="ir.ui.view">
+        <field name="name">kai.codescan.log.list</field>
         <field name="model">kai.codescan.log</field>
         <field name="arch" type="xml">
-            <tree string="Scan Logs" create="false" edit="false" delete="false">
+            <list string="Scan Logs" create="false" edit="false" delete="false">
                 <field name="create_date"/>
                 <field name="name"/>
                 <field name="user_id"/>
-            </tree>
+            </list>
         </field>
     </record>
 
