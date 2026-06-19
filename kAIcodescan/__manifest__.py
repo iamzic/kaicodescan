@@ -15,6 +15,7 @@
     ],
     "assets": {
         "web.assets_backend": [
+            "kAIcodescan/static/src/lib/jsQR.js",
             "kAIcodescan/static/src/js/camera_scanner.js",
             "kAIcodescan/static/src/xml/camera_scanner.xml",
         ],
