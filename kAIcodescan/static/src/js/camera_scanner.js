@@ -9,9 +9,11 @@ class CameraScanner extends Component {
         this.notification = useService("notification");
         this.orm = useService("orm");
         this.videoRef = useRef("video");
+        this.canvasRef = useRef("canvas");
         this.state = useState({
             running: false,
-            supported: true,
+            cameraSupported: true,
+            detectionMethod: "",   // "native" | "jsqr" | "none"
             message: "Ready",
             lastBarcode: "",
         });
@@ -24,15 +26,27 @@ class CameraScanner extends Component {
 
     _checkSupport() {
         const hasCamera = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-        const hasDetector = "BarcodeDetector" in window;
-        this.state.supported = hasCamera && hasDetector;
-        if (!this.state.supported) {
-            this.state.message = "Your browser does not fully support camera barcode scanning.";
+        this.state.cameraSupported = hasCamera;
+
+        if (!hasCamera) {
+            this.state.message = "Camera API not available. Please use a modern browser over HTTPS or localhost.";
+            return;
+        }
+
+        if ("BarcodeDetector" in window) {
+            this.state.detectionMethod = "native";
+            this.state.message = "Ready (native BarcodeDetector)";
+        } else if (typeof window.jsQR === "function") {
+            this.state.detectionMethod = "jsqr";
+            this.state.message = "Ready (QR code scanning via jsQR — for full 1D barcode support use Chrome 83+/Edge 83+)";
+        } else {
+            this.state.detectionMethod = "none";
+            this.state.message = "No barcode detection available. Please use Chrome 83+ or Edge 83+.";
         }
     }
 
     async startScan() {
-        if (!this.state.supported || this.state.running) {
+        if (!this.state.cameraSupported || this.state.running || this.state.detectionMethod === "none") {
             return;
         }
 
@@ -55,6 +69,14 @@ class CameraScanner extends Component {
     }
 
     async _runDetectorLoop() {
+        if (this.state.detectionMethod === "native") {
+            await this._runNativeDetector();
+        } else if (this.state.detectionMethod === "jsqr") {
+            this._runJsQRDetector();
+        }
+    }
+
+    async _runNativeDetector() {
         const detector = new window.BarcodeDetector({
             formats: [
                 "qr_code", "code_128", "ean_13", "ean_8", "upc_a", "upc_e", "code_39", "code_93",
@@ -84,12 +106,44 @@ class CameraScanner extends Component {
         tick();
     }
 
+    _runJsQRDetector() {
+        const canvas = this.canvasRef.el;
+        const ctx = canvas.getContext("2d");
+
+        const tick = () => {
+            if (!this.state.running || !this.videoRef.el) {
+                return;
+            }
+            const video = this.videoRef.el;
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                try {
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+                    if (code && code.data) {
+                        const rawValue = code.data.trim();
+                        if (rawValue && rawValue !== this.state.lastBarcode) {
+                            this.state.lastBarcode = rawValue;
+                            this.state.message = `Scanned: ${rawValue}`;
+                            this._sendBarcode(rawValue);
+                        }
+                    }
+                } catch (e) {
+                    // Ignore transient errors
+                }
+            }
+            this._timer = window.requestAnimationFrame(tick);
+        };
+
+        this._timer = window.requestAnimationFrame(tick);
+    }
+
     async _sendBarcode(barcode) {
         try {
-            const result = await this.orm.call("ir.http", "session_info", []);
-            if (!result) {
-                // Keep lightweight call to ensure session alive
-            }
             await fetch("/kAIcodescan/scan", {
                 method: "POST",
                 headers: {
@@ -114,6 +168,7 @@ class CameraScanner extends Component {
         this.state.running = false;
         if (this._timer) {
             clearTimeout(this._timer);
+            cancelAnimationFrame(this._timer);
             this._timer = null;
         }
         if (this._stream) {
